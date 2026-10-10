@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Quest: Adventure</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Outfit:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0d0914;
+            color: #e2e8f0;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .shadow-glow {
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.35);
+        }
+
+        .enemy-glow {
+            box-shadow: 0 0 20px rgba(225, 29, 72, 0.35);
+        }
+
+        .damage-float {
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+        }
+
+        .shake {
+            animation: shakeAnim 0.4s ease-in-out;
+        }
+
+        @keyframes shakeAnim {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-2 sm:p-4">
+
+    <!-- Game Header -->
+    <header class="w-full max-w-xl text-center my-2">
+        <h1 class="text-3xl sm:text-4xl font-extrabold font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 tracking-wider">
+            SHADOW QUEST
+        </h1>
+        <p class="text-xs sm:text-sm text-purple-300 tracking-widest font-semibold uppercase">Adventure RPG</p>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="w-full max-w-xl bg-slate-900/90 border border-purple-900/50 rounded-2xl p-4 shadow-glow flex flex-col gap-4 relative overflow-hidden backdrop-blur-md">
+        
+        <!-- Floor / Dungeon Info & Quest -->
+        <div class="flex justify-between items-center bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
+            <div>
+                <span class="text-xs text-purple-400 font-bold uppercase tracking-wider block">Lokasi</span>
+                <span id="location-text" class="text-sm font-bold text-slate-200">Dungeon Floor 1</span>
+            </div>
+            <div class="text-right">
+                <span class="text-xs text-amber-400 font-bold uppercase tracking-wider block">Misi Utama</span>
+                <span id="quest-text" class="text-xs sm:text-sm font-medium text-amber-200">Kalahkan 3 Shadow Bat</span>
+            </div>
+        </div>
+
+        <!-- Battlefield Area -->
+        <div class="relative bg-slate-950 rounded-xl p-4 border border-purple-950 min-h-[220px] flex justify-between items-center overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute inset-0 bg-gradient-to-b from-purple-950/20 via-transparent to-slate-950 pointer-events-none"></div>
+
+            <!-- Floating Damage Text Container -->
+            <div id="damage-container" class="absolute inset-0 pointer-events-none z-30"></div>
+
+            <!-- Hero Avatar & HUD -->
+            <div id="hero-sprite" class="relative z-10 flex flex-col items-center gap-1 transition-transform duration-200">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-purple-900/40 border-2 border-purple-500 flex items-center justify-center text-4xl shadow-glow">
+                    ⚔️
+                </div>
+                <span class="text-xs font-bold text-purple-300">Shadow Knight</span>
+                <!-- Hero HP Bar -->
+                <div class="w-20 sm:w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                    <div id="hero-hp-bar" class="bg-gradient-to-r from-emerald-500 to-green-400 h-full w-full transition-all duration-300"></div>
+                </div>
+                <span id="hero-hp-text" class="text-[10px] text-slate-300 font-mono">100 / 100</span>
+            </div>
+
+            <!-- VS Badge -->
+            <div class="text-slate-600 font-cinzel font-black text-xl italic select-none">VS</div>
+
+            <!-- Enemy Avatar & HUD -->
+            <div id="enemy-sprite" class="relative z-10 flex flex-col items-center gap-1 transition-transform duration-200">
+                <div id="enemy-icon-box" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-rose-900/40 border-2 border-rose-500 flex items-center justify-center text-4xl enemy-glow">
+                    <span id="enemy-icon">🦇</span>
+                </div>
+                <span id="enemy-name" class="text-xs font-bold text-rose-300">Shadow Bat</span>
+                <!-- Enemy HP Bar -->
+                <div class="w-20 sm:w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                    <div id="enemy-hp-bar" class="bg-gradient-to-r from-rose-600 to-red-400 h-full w-full transition-all duration-300"></div>
+                </div>
+                <span id="enemy-hp-text" class="text-[10px] text-slate-300 font-mono">40 / 40</span>
+            </div>
+        </div>
+
+        <!-- Combat Log -->
+        <div id="combat-log" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 h-20 overflow-y-auto text-xs font-mono flex flex-col gap-1 text-slate-300">
+            <p class="text-purple-400">Petualangan dimulai! Hadapi kegelapan di dalam dungeon...</p>
+        </div>
+
+        <!-- Player Stats Summary -->
+        <div class="grid grid-cols-4 gap-2 bg-slate-800/50 p-2 rounded-xl text-center text-xs">
+            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">Level</span>
+                <span id="stat-level" class="font-bold text-purple-400 text-sm">1</span>
+            </div>
+            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">Mana (MP)</span>
+                <span id="stat-mp" class="font-bold text-blue-400 text-sm">30/30</span>
+            </div>
+            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">Gold</span>
+                <span id="stat-gold" class="font-bold text-amber-400 text-sm">0</span>
+            </div>
+            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                <span class="text-slate-400 block text-[10px]">Potion</span>
+                <span id="stat-potion" class="font-bold text-emerald-400 text-sm">2</span>
+            </div>
+        </div>
+
+        <!-- Action Control Buttons -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <button id="btn-attack" onclick="handlePlayerAction('attack')" class="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-red-400/30 flex flex-col items-center justify-center gap-0.5">
+                <span class="text-base">🗡️ Serang</span>
+                <span class="text-[10px] text-red-200 font-normal">Fisik (0 MP)</span>
+            </button>
+            <button id="btn-skill" onclick="handlePlayerAction('skill')" class="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-purple-400/30 flex flex-col items-center justify-center gap-0.5">
+                <span class="text-base">💥 Shadow Slash</span>
+                <span class="text-[10px] text-purple-200 font-normal">Spesial (10 MP)</span>
+            </button>
+            <button id="btn-heal" onclick="handlePlayerAction('heal')" class="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-500 hover:to-cyan-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-blue-400/30 flex flex-col items-center justify-center gap-0.5">
+                <span class="text-base">✨ Sihir Heal</span>
+                <span class="text-[10px] text-blue-200 font-normal">Pulih (15 MP)</span>
+            </button>
+            <button id="btn-item" onclick="handlePlayerAction('potion')" class="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-emerald-400/30 flex flex-col items-center justify-center gap-0.5">
+                <span class="text-base">🧪 Potion</span>
+                <span class="text-[10px] text-emerald-200 font-normal">+50 HP (Item)</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-4 text-center text-xs text-slate-500 font-medium">
+        Shadow Quest: Adventure &copy; HTML5 Canvas & JS Game Engine
+    </footer>
+
+    <!-- Game Logic Engine -->
+    <script>
+        // Web Audio API Synthesizer
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'hit') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'skill') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'heal') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.1);
+                osc.frequency.setValueAtTime(659.25, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+        }
+
+        // Game State Database
+        const player = {
+            level: 1,
+            hp: 100,
+            maxHp: 100,
+            mp: 30,
+            maxMp: 30,
+            atk: 18,
+            xp: 0,
+            nextXp: 50,
+            gold: 0,
+            potions: 2,
+            floor: 1
+        };
+
+        const enemiesDatabase = [
+            { name: "Shadow Bat", hp: 45, maxHp: 45, atk: 8, xp: 25, gold: 15, icon: "🦇" },
+            { name: "Goblin Scout", hp: 70, maxHp: 70, atk: 12, xp: 40, gold: 25, icon: "👺" },
+            { name: "Dark Sorcerer", hp: 100, maxHp: 100, atk: 18, xp: 65, gold: 40, icon: "🧙‍♂️" },
+            { name: "Shadow Lord (BOSS)", hp: 220, maxHp: 220, atk: 26, xp: 200, gold: 150, icon: "👿" }
+        ];
+
+        let currentEnemy = null;
+        let isBusy = false;
+        let questKills = 0;
+        const targetKills = 3;
+
+        // Initialize Game
+        function initGame() {
+            spawnEnemy();
+            updateUI();
+        }
+
+        function spawnEnemy() {
+            let enemyIndex = 0;
+            if (player.floor >= 10) {
+                enemyIndex = 3; // Boss
+            } else if (player.floor >= 6) {
+                enemyIndex = 2; // Sorcerer
+            } else if (player.floor >= 3) {
+                enemyIndex = 1; // Goblin
+            } else {
+                enemyIndex = 0; // Bat
+            }
+
+            const base = enemiesDatabase[enemyIndex];
+            currentEnemy = {
+                name: base.name,
+                hp: base.hp + (player.floor * 5),
+                maxHp: base.maxHp + (player.floor * 5),
+                atk: base.atk + (player.floor * 2),
+                xp: base.xp,
+                gold: base.gold,
+                icon: base.icon
+            };
+
+            document.getElementById('enemy-icon').innerText = currentEnemy.icon;
+            document.getElementById('enemy-name').innerText = currentEnemy.name;
+            logMessage(`Musuh baru muncul: <span class="text-rose-400 font-bold">${currentEnemy.name}</span>!`, "text-amber-300");
+            updateUI();
+        }
+
+        function logMessage(msg, colorClass = "text-slate-300") {
+            const logBox = document.getElementById('combat-log');
+            const p = document.createElement('p');
+            p.className = colorClass;
+            p.innerHTML = msg;
+            logBox.appendChild(p);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function createFloatingDamage(amount, isPlayer, isHeal = false) {
+            const container = document.getElementById('damage-container');
+            const el = document.createElement('div');
+            el.className = `absolute text-base sm:text-lg font-black font-mono damage-float ${isHeal ? 'text-green-400' : (isPlayer ? 'text-red-500' : 'text-amber-300')}`;
+            
+            // Randomize slightly for dynamic feel
+            const leftPos = isPlayer ? 25 : 70;
+            el.style.left = `${leftPos}%`;
+            el.style.top = `40%`;
+            el.innerText = isHeal ? `+${amount}` : `-${amount}`;
+
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function handlePlayerAction(action) {
+            if (isBusy || player.hp <= 0) return;
+
+            let damage = 0;
+            let playedSound = false;
+
+            if (action === 'attack') {
+                isBusy = true;
+                damage = Math.floor(player.atk * (0.9 + Math.random() * 0.3));
+                currentEnemy.hp = Math.max(0, currentEnemy.hp - damage);
+                playSound('hit');
+                playedSound = true;
+
+                // Animate Hero Attack
+                document.getElementById('hero-sprite').classList.add('translate-x-4');
+                setTimeout(() => document.getElementById('hero-sprite').classList.remove('translate-x-4'), 150);
+
+                // Animate Enemy Hurt
+                document.getElementById('enemy-sprite').classList.add('shake');
+                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 400);
+
+                createFloatingDamage(damage, false);
+                logMessage(`Kamu menyerang ${currentEnemy.name} dan memberikan <span class="text-amber-400 font-bold">${damage}</span> damage!`);
+
+            } else if (action === 'skill') {
+                if (player.mp < 10) {
+                    logMessage(`Mana tidak cukup! Membutuhkan 10 MP.`, "text-red-400");
+                    return;
+                }
+                isBusy = true;
+                player.mp -= 10;
+                damage = Math.floor(player.atk * 1.8 * (0.9 + Math.random() * 0.2));
+                currentEnemy.hp = Math.max(0, currentEnemy.hp - damage);
+                playSound('skill');
+
+                // Animate Enemy Hurt
+                document.getElementById('enemy-sprite').classList.add('shake');
+                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 400);
+
+                createFloatingDamage(damage, false);
+                logMessage(`⚡ SHADOW SLASH! Menebas ${currentEnemy.name} sebesar <span class="text-purple-400 font-bold">${damage}</span> damage!`, "text-purple-300");
+
+            } else if (action === 'heal') {
+                if (player.mp < 15) {
+                    logMessage(`Mana tidak cukup! Membutuhkan 15 MP.`, "text-red-400");
+                    return;
+                }
+                isBusy = true;
+                player.mp -= 15;
+                const healAmount = 35;
+                player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                playSound('heal');
+
+                createFloatingDamage(healAmount, true, true);
+                logMessage(`✨ Kamu menggunakan Sihir Pemulihan dan pulih <span class="text-emerald-400 font-bold">${healAmount} HP</span>!`, "text-emerald-300");
+
+            } else if (action === 'potion') {
+                if (player.potions <= 0) {
+                    logMessage(`Kamu tidak memiliki Potion tersisa!`, "text-red-400");
+                    return;
+                }
+                isBusy = true;
+                player.potions--;
+                const healAmount = 50;
+                player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                playSound('heal');
+
+                createFloatingDamage(healAmount, true, true);
+                logMessage(`🧪 Kamu minum Potion dan memulihkan <span class="text-emerald-400 font-bold">${healAmount} HP</span>!`, "text-emerald-300");
+            }
+
+            updateUI();
+
+            // Check Enemy Death or Enemy Turn
+            if (currentEnemy.hp <= 0) {
+                setTimeout(handleEnemyDefeated, 600);
+            } else {
+                setTimeout(enemyTurn, 800);
+            }
+        }
+
+        function enemyTurn() {
+            if (currentEnemy.hp <= 0) return;
+
+            const enemyDamage = Math.floor(currentEnemy.atk * (0.8 + Math.random() * 0.4));
+            player.hp = Math.max(0, player.hp - enemyDamage);
+            playSound('hit');
+
+            // Animate Hero Hurt
+            document.getElementById('hero-sprite').classList.add('shake');
+            setTimeout(() => document.getElementById('hero-sprite').classList.remove('shake'), 400);
+
+            createFloatingDamage(enemyDamage, true);
+            logMessage(`${currentEnemy.name} menyerang balik! Kamu menerima <span class="text-red-400 font-bold">${enemyDamage}</span> damage.`, "text-rose-300");
+
+            // Slowly restore MP each turn
+            player.mp = Math.min(player.maxMp, player.mp + 3);
+
+            updateUI();
+
+            if (player.hp <= 0) {
+                logMessage(`💀 KHIANAT KEGELAPAN! Kamu telah gugur di lantai ${player.floor}.`, "text-red-500 font-bold");
+                setTimeout(() => {
+                    alert("Game Over! Kamu akan bangkit kembali dari awal.");
+                    resetGame();
+                }, 1000);
+            } else {
+                isBusy = false;
+            }
+        }
+
+        function handleEnemyDefeated() {
+            playSound('win');
+            logMessage(`🎉 Kamu mengalahkan <span class="text-emerald-400 font-bold">${currentEnemy.name}</span>!`, "text-emerald-300");
+            
+            player.xp += currentEnemy.xp;
+            player.gold += currentEnemy.gold;
+            questKills++;
+
+            logMessage(`Mendapatkan +${currentEnemy.xp} XP dan +${currentEnemy.gold} Gold.`, "text-amber-300");
+
+            // Level Up Check
+            if (player.xp >= player.nextXp) {
+                player.level++;
+                player.xp -= player.nextXp;
+                player.nextXp = Math.floor(player.nextXp * 1.5);
+                player.maxHp += 20;
+                player.hp = player.maxHp;
+                player.maxMp += 10;
+                player.mp = player.maxMp;
+                player.atk += 5;
+                logMessage(`🌟 LEVEL UP! Kamu naik ke Level ${player.level}! Status meningkat!`, "text-purple-300 font-bold");
+            }
+
+            // Chance to drop Potion
+            if (Math.random() < 0.35) {
+                player.potions++;
+                logMessage(`🧪 Musuh menjatuhkan Potion! (+1 Potion)`, "text-teal-300");
+            }
+
+            // Progression
+            player.floor++;
+            updateQuest();
+
+            setTimeout(() => {
+                spawnEnemy();
+                isBusy = false;
+            }, 1200);
+        }
+
+        function updateQuest() {
+            if (player.floor >= 10) {
+                document.getElementById('quest-text').innerText = "Kalahkan BOSS Shadow Lord!";
+            } else {
+                document.getElementById('quest-text').innerText = `Kalahkan musuh (${questKills}/${targetKills})`;
+            }
+        }
+
+        function resetGame() {
+            player.level = 1;
+            player.hp = 100;
+            player.maxHp = 100;
+            player.mp = 30;
+            player.maxMp = 30;
+            player.atk = 18;
+            player.xp = 0;
+            player.nextXp = 50;
+            player.gold = 0;
+            player.potions = 2;
+            player.floor = 1;
+            questKills = 0;
+            isBusy = false;
+
+            document.getElementById('combat-log').innerHTML = '';
+            logMessage("Petualangan dimulai kembali dari awal lantai!", "text-purple-400");
+            spawnEnemy();
+            updateUI();
+        }
+
+        function updateUI() {
+            // Player Bars & Stats
+            const heroHpPct = (player.hp / player.maxHp) * 100;
+            document.getElementById('hero-hp-bar').style.width = `${heroHpPct}%`;
+            document.getElementById('hero-hp-text').innerText = `${player.hp} / ${player.maxHp}`;
+            document.getElementById('stat-level').innerText = player.level;
+            document.getElementById('stat-mp').innerText = `${player.mp}/${player.maxMp}`;
+            document.getElementById('stat-gold').innerText = player.gold;
+            document.getElementById('stat-potion').innerText = player.potions;
+
+            // Enemy Bars
+            if (currentEnemy) {
+                const enemyHpPct = (currentEnemy.hp / currentEnemy.maxHp) * 100;
+                document.getElementById('enemy-hp-bar').style.width = `${enemyHpPct}%`;
+                document.getElementById('enemy-hp-text').innerText = `${currentEnemy.hp} / ${currentEnemy.maxHp}`;
+            }
+
+            // Floor & Location
+            document.getElementById('location-text').innerText = player.floor >= 10 ? "Chamber of Shadow Lord" : `Dungeon Floor ${player.floor}`;
+            updateQuest();
+        }
+
+        // Run Engine
+        window.onload = initGame;
+    </script>
+</body>
+</html>
