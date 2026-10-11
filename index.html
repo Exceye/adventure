@@ -1,513 +1,1163 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shadow Quest: Adventure</title>
-    <!-- Tailwind CSS CDN for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Outfit:wght@400;600;700&display=swap');
-        
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #0d0914;
-            color: #e2e8f0;
-            user-select: none;
-            touch-action: manipulation;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#10131b">
+  <title>Shadow Quest: Adventure</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        .font-cinzel {
-            font-family: 'Cinzel', serif;
-        }
+:root {
+  --bg: #10131b;
+  --panel: rgba(16, 19, 27, 0.82);
+  --border: #3a4160;
+  --text: #e8ecff;
+  --muted: #8d96c0;
+  --hp: #e0455a;
+  --mana: #4a8cff;
+  --xp: #f2c14e;
+  --accent: #b36bff;
+  --font: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
+}
 
-        .shadow-glow {
-            box-shadow: 0 0 20px rgba(147, 51, 234, 0.35);
-        }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        .enemy-glow {
-            box-shadow: 0 0 20px rgba(225, 29, 72, 0.35);
-        }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
-        .damage-float {
-            animation: floatUp 0.8s ease-out forwards;
-        }
+#game-shell { position: fixed; inset: 0; }
 
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            50% { transform: translateY(-20px) scale(1.2); }
-            100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
-        }
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 
-        .shake {
-            animation: shakeAnim 0.4s ease-in-out;
-        }
+/* ---------- HUD ---------- */
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left));
+}
 
-        @keyframes shakeAnim {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-8px); }
-            40% { transform: translateX(8px); }
-            60% { transform: translateX(-4px); }
-            80% { transform: translateX(4px); }
-        }
-    </style>
+.hero-card, .quest-card, .coin {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  box-shadow: 0 0 0 2px #000, 3px 3px 0 2px rgba(0,0,0,.5);
+}
+
+.hero-card {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex; gap: 8px;
+  padding: 8px;
+  width: min(260px, 52vw);
+}
+.portrait {
+  width: 40px; height: 40px; flex: none;
+  display: grid; place-items: center;
+  font-size: 20px;
+  background: #1b2036;
+  border: 2px solid var(--accent);
+}
+.hero-info { flex: 1; min-width: 0; }
+.hero-line {
+  display: flex; justify-content: space-between;
+  font-size: 8px; margin-bottom: 5px; gap: 6px;
+}
+.hero-line span { color: var(--xp); }
+.bar-label {
+  display: flex; justify-content: space-between;
+  font-size: 6px; color: var(--muted); margin: 3px 0 2px;
+}
+.bar {
+  height: 7px; background: #07080d;
+  border: 1px solid #000; overflow: hidden;
+}
+.bar i { display: block; height: 100%; width: 100%; transition: width .15s linear; }
+.bar.hp i { background: linear-gradient(var(--hp), #a62a3d); }
+.bar.mana i { background: linear-gradient(var(--mana), #2b5db8); }
+.bar.xp { height: 4px; margin-top: 5px; }
+.bar.xp i { background: var(--xp); width: 0; }
+
+.quest-card {
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  width: min(240px, 34vw);
+  text-align: center;
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: 8px;
+}
+.quest-title { color: var(--accent); font-size: 6px; letter-spacing: 1px; }
+#questText { color: var(--muted); font-size: 7px; }
+.quest-progress { height: 5px; background: #07080d; border: 1px solid #000; }
+.quest-progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+.top-right {
+  position: absolute;
+  top: 10px; right: 10px;
+  display: flex; gap: 8px; align-items: center;
+  pointer-events: auto;
+}
+.coin { padding: 9px 10px; font-size: 9px; color: var(--xp); }
+.small-button {
+  width: 34px; height: 34px;
+  font-family: var(--font); font-size: 11px;
+  color: var(--text); background: var(--panel);
+  border: 2px solid var(--border);
+  box-shadow: 0 0 0 2px #000;
+  cursor: pointer;
+}
+.small-button:active { transform: translateY(2px); }
+
+#toast {
+  position: absolute;
+  left: 50%; top: 88px;
+  transform: translate(-50%, -8px);
+  padding: 8px 14px;
+  font-size: 8px; text-align: center;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 2px #000;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  max-width: 90vw;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Overlay / menu ---------- */
+.overlay {
+  position: absolute; inset: 0;
+  z-index: 20;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 20px; text-align: center;
+  background: radial-gradient(ellipse at center, rgba(16,19,27,.78), rgba(8,9,14,.95));
+  backdrop-filter: blur(2px);
+}
+.overlay.hidden { display: none; }
+.overlay p { margin: 0; font-size: 8px; line-height: 1.8; color: var(--muted); }
+.title-mark { font-size: 28px; color: var(--accent); animation: float 2s ease-in-out infinite; }
+.eyebrow { color: var(--accent) !important; letter-spacing: 2px; font-size: 7px !important; }
+.overlay h1 {
+  margin: 0; font-size: clamp(20px, 6vw, 40px);
+  color: var(--text);
+  text-shadow: 3px 3px 0 #5a2d99, 6px 6px 0 #000;
+}
+.overlay h2 {
+  margin: 0; font-size: clamp(16px, 4.5vw, 28px);
+  text-shadow: 3px 3px 0 #5a2d99, 5px 5px 0 #000;
+}
+.subtitle { font-size: 9px !important; color: var(--text) !important; }
+.menu-card { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; width: min(300px, 86vw); }
+
+.primary-button, .secondary-button {
+  font-family: var(--font); font-size: 10px;
+  padding: 14px 16px; cursor: pointer;
+  color: var(--text);
+  border: 2px solid #000;
+  box-shadow: 0 4px 0 #000;
+  width: min(300px, 86vw);
+}
+.primary-button { background: linear-gradient(#8a4cff, #5a2d99); }
+.secondary-button { background: #232845; border-color: var(--border); }
+.primary-button:active, .secondary-button:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+.secondary-button:disabled { opacity: .4; cursor: not-allowed; }
+
+@keyframes float { 50% { transform: translateY(-6px); } }
+
+/* ---------- Mobile controls ---------- */
+#mobileControls {
+  position: absolute; inset: auto 0 0 0;
+  display: none;
+  justify-content: space-between; align-items: flex-end;
+  padding: 0 max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  pointer-events: none;
+  z-index: 10;
+}
+body.touch #mobileControls { display: flex; }
+body.touch #desktopHint { display: none; }
+
+#joystick {
+  position: relative;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(20,24,40,.5);
+  border: 2px solid rgba(179,107,255,.5);
+  pointer-events: auto; touch-action: none;
+}
+#joyKnob {
+  position: absolute; left: 50%; top: 50%;
+  width: 52px; height: 52px; margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: rgba(179,107,255,.7);
+  border: 2px solid #000;
+}
+
+.action-buttons {
+  display: grid; grid-template-columns: repeat(2, 64px); gap: 10px;
+  pointer-events: auto;
+}
+.action {
+  position: relative;
+  width: 64px; height: 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-family: var(--font); color: var(--text);
+  background: rgba(35,40,69,.8);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #000;
+  touch-action: none;
+}
+.action span { font-size: 18px; line-height: 1; }
+.action small { font-size: 5px; color: var(--muted); }
+.action.hit { background: rgba(138,76,255,.75); border-color: var(--accent); }
+.action:active, .action.pressed { transform: scale(.92); filter: brightness(1.3); }
+.action em {
+  position: absolute; inset: 0; border-radius: 50%;
+  display: none; place-items: center;
+  font-style: normal; font-size: 10px;
+  background: rgba(0,0,0,.65);
+}
+.action em.on { display: grid; }
+
+#desktopHint {
+  position: absolute; left: 50%; bottom: 10px;
+  transform: translateX(-50%);
+  font-size: 6px; color: var(--muted);
+  background: var(--panel); padding: 6px 10px;
+  border: 1px solid var(--border);
+  pointer-events: none; white-space: nowrap;
+}
+
+@media (max-height: 420px) {
+  .hero-card { width: 210px; padding: 6px; }
+  .portrait { width: 30px; height: 30px; font-size: 14px; }
+  .quest-card { top: 8px; }
+  #joystick { width: 100px; height: 100px; }
+  .action, .action-buttons { }
+  .action-buttons { grid-template-columns: repeat(4, 52px); }
+  .action { width: 52px; height: 52px; }
+  .action span { font-size: 14px; }
+}
+@media (max-width: 560px) {
+  .quest-card { display: none; }
+}
+
+</style>
 </head>
-<body class="min-h-screen flex flex-col justify-between items-center p-2 sm:p-4">
+<body>
+  <main id="game-shell">
+    <canvas id="game" aria-label="Shadow Quest game"></canvas>
 
-    <!-- Game Header -->
-    <header class="w-full max-w-xl text-center my-2">
-        <h1 class="text-3xl sm:text-4xl font-extrabold font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 tracking-wider">
-            SHADOW QUEST
-        </h1>
-        <p class="text-xs sm:text-sm text-purple-300 tracking-widest font-semibold uppercase">Adventure RPG</p>
-    </header>
-
-    <!-- Main Game Container -->
-    <main class="w-full max-w-xl bg-slate-900/90 border border-purple-900/50 rounded-2xl p-4 shadow-glow flex flex-col gap-4 relative overflow-hidden backdrop-blur-md">
-        
-        <!-- Floor / Dungeon Info & Quest -->
-        <div class="flex justify-between items-center bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-            <div>
-                <span class="text-xs text-purple-400 font-bold uppercase tracking-wider block">Lokasi</span>
-                <span id="location-text" class="text-sm font-bold text-slate-200">Dungeon Floor 1</span>
-            </div>
-            <div class="text-right">
-                <span class="text-xs text-amber-400 font-bold uppercase tracking-wider block">Misi Utama</span>
-                <span id="quest-text" class="text-xs sm:text-sm font-medium text-amber-200">Kalahkan 3 Shadow Bat</span>
-            </div>
+    <section id="hud" aria-live="polite">
+      <div class="hero-card">
+        <div class="portrait">⚔</div>
+        <div class="hero-info">
+          <div class="hero-line"><strong>SHADOW KNIGHT</strong><span id="levelText">LV 1</span></div>
+          <div class="bar-label">HP <span id="hpText">100/100</span></div>
+          <div class="bar hp"><i id="hpBar"></i></div>
+          <div class="bar-label">MANA <span id="manaText">60/60</span></div>
+          <div class="bar mana"><i id="manaBar"></i></div>
+          <div class="bar xp"><i id="xpBar"></i></div>
         </div>
+      </div>
+      <div class="quest-card">
+        <div class="quest-title">✦ MISI AKTIF</div>
+        <strong>Ancaman Hutan</strong>
+        <span id="questText">Kalahkan slime: 0/5</span>
+        <div class="quest-progress"><i id="questBar"></i></div>
+      </div>
+      <div class="top-right">
+        <div class="coin">◆ <span id="coinText">0</span></div>
+        <button id="pauseBtn" class="small-button" aria-label="Jeda">Ⅱ</button>
+      </div>
+      <div id="toast"></div>
+    </section>
 
-        <!-- Battlefield Area -->
-        <div class="relative bg-slate-950 rounded-xl p-4 border border-purple-950 min-h-[220px] flex justify-between items-center overflow-hidden">
-            <!-- Background Decoration -->
-            <div class="absolute inset-0 bg-gradient-to-b from-purple-950/20 via-transparent to-slate-950 pointer-events-none"></div>
+    <div id="startScreen" class="overlay">
+      <div class="title-mark">✦</div>
+      <p class="eyebrow">A PIXEL ART ADVENTURE</p>
+      <h1>SHADOW QUEST</h1>
+      <p class="subtitle">Jelajahi hutan. Hadapi kegelapan.</p>
+      <div class="menu-card">
+        <button id="playBtn" class="primary-button">▶ MULAI PETUALANGAN</button>
+        <button id="continueBtn" class="secondary-button">↻ LANJUTKAN</button>
+        <p>WASD / tombol panah untuk bergerak • J untuk menyerang</p>
+      </div>
+    </div>
 
-            <!-- Floating Damage Text Container -->
-            <div id="damage-container" class="absolute inset-0 pointer-events-none z-30"></div>
+    <div id="pauseScreen" class="overlay hidden">
+      <p class="eyebrow">PETUALANGAN DIJEDA</p><h2>PAUSE</h2>
+      <button id="resumeBtn" class="primary-button">LANJUTKAN</button>
+      <button id="saveBtn" class="secondary-button">SIMPAN PROGRES</button>
+      <button id="menuBtn" class="secondary-button">MENU UTAMA</button>
+    </div>
 
-            <!-- Hero Avatar & HUD -->
-            <div id="hero-sprite" class="relative z-10 flex flex-col items-center gap-1 transition-transform duration-200">
-                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-purple-900/40 border-2 border-purple-500 flex items-center justify-center text-4xl shadow-glow">
-                    ⚔️
-                </div>
-                <span class="text-xs font-bold text-purple-300">Shadow Knight</span>
-                <!-- Hero HP Bar -->
-                <div class="w-20 sm:w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
-                    <div id="hero-hp-bar" class="bg-gradient-to-r from-emerald-500 to-green-400 h-full w-full transition-all duration-300"></div>
-                </div>
-                <span id="hero-hp-text" class="text-[10px] text-slate-300 font-mono">100 / 100</span>
-            </div>
+    <div id="gameOverScreen" class="overlay hidden">
+      <p class="eyebrow">PETUALANGAN TERHENTI</p><h2>KAMU TUMBANG</h2>
+      <p>Bangkit lagi dan lanjutkan petualanganmu.</p>
+      <button id="retryBtn" class="primary-button">COBA LAGI</button>
+      <button id="gameOverMenuBtn" class="secondary-button">MENU UTAMA</button>
+    </div>
 
-            <!-- VS Badge -->
-            <div class="text-slate-600 font-cinzel font-black text-xl italic select-none">VS</div>
+    <div id="winScreen" class="overlay hidden">
+      <p class="eyebrow">MISI SELESAI</p><h2>PEMBASMI SLIME!</h2>
+      <p>Hutan kini sedikit lebih aman. Petualangan berlanjut!</p>
+      <button id="winContinueBtn" class="primary-button">LANJUT BERTARUNG</button>
+    </div>
 
-            <!-- Enemy Avatar & HUD -->
-            <div id="enemy-sprite" class="relative z-10 flex flex-col items-center gap-1 transition-transform duration-200">
-                <div id="enemy-icon-box" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-rose-900/40 border-2 border-rose-500 flex items-center justify-center text-4xl enemy-glow">
-                    <span id="enemy-icon">🦇</span>
-                </div>
-                <span id="enemy-name" class="text-xs font-bold text-rose-300">Shadow Bat</span>
-                <!-- Enemy HP Bar -->
-                <div class="w-20 sm:w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
-                    <div id="enemy-hp-bar" class="bg-gradient-to-r from-rose-600 to-red-400 h-full w-full transition-all duration-300"></div>
-                </div>
-                <span id="enemy-hp-text" class="text-[10px] text-slate-300 font-mono">40 / 40</span>
-            </div>
-        </div>
+    <div id="mobileControls">
+      <div id="joystick" aria-label="Joystick virtual"><div id="joyKnob"></div></div>
+      <div class="action-buttons">
+        <button class="action skill" data-action="fire" aria-label="Fireball"><span>🔥</span><small>SKILL</small><em id="fireCooldown"></em></button>
+        <button class="action hit" data-action="hit" aria-label="Serang"><span>⚔</span><small>HIT</small></button>
+        <button class="action dash" data-action="dash" aria-label="Dash"><span>➤</span><small>DASH</small><em id="dashCooldown"></em></button>
+        <button class="action heal" data-action="medkit" aria-label="Gunakan medkit"><span>✚</span><small>MEDKIT <b id="medkitCount">2</b></small></button>
+      </div>
+    </div>
 
-        <!-- Combat Log -->
-        <div id="combat-log" class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 h-20 overflow-y-auto text-xs font-mono flex flex-col gap-1 text-slate-300">
-            <p class="text-purple-400">Petualangan dimulai! Hadapi kegelapan di dalam dungeon...</p>
-        </div>
+    <div id="desktopHint">WASD / ↑↓←→ gerak · J HIT · K Fireball · L Dash · H Medkit · Esc Pause</div>
+  </main>
+  <script>
+(() => {
+'use strict';
 
-        <!-- Player Stats Summary -->
-        <div class="grid grid-cols-4 gap-2 bg-slate-800/50 p-2 rounded-xl text-center text-xs">
-            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                <span class="text-slate-400 block text-[10px]">Level</span>
-                <span id="stat-level" class="font-bold text-purple-400 text-sm">1</span>
-            </div>
-            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                <span class="text-slate-400 block text-[10px]">Mana (MP)</span>
-                <span id="stat-mp" class="font-bold text-blue-400 text-sm">30/30</span>
-            </div>
-            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                <span class="text-slate-400 block text-[10px]">Gold</span>
-                <span id="stat-gold" class="font-bold text-amber-400 text-sm">0</span>
-            </div>
-            <div class="bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                <span class="text-slate-400 block text-[10px]">Potion</span>
-                <span id="stat-potion" class="font-bold text-emerald-400 text-sm">2</span>
-            </div>
-        </div>
+/* =====================================================
+   SHADOW QUEST - game.js
+   Cocok dengan index.html + style.css yang sudah ada.
+   ===================================================== */
 
-        <!-- Action Control Buttons -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-            <button id="btn-attack" onclick="handlePlayerAction('attack')" class="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-red-400/30 flex flex-col items-center justify-center gap-0.5">
-                <span class="text-base">🗡️ Serang</span>
-                <span class="text-[10px] text-red-200 font-normal">Fisik (0 MP)</span>
-            </button>
-            <button id="btn-skill" onclick="handlePlayerAction('skill')" class="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-purple-400/30 flex flex-col items-center justify-center gap-0.5">
-                <span class="text-base">💥 Shadow Slash</span>
-                <span class="text-[10px] text-purple-200 font-normal">Spesial (10 MP)</span>
-            </button>
-            <button id="btn-heal" onclick="handlePlayerAction('heal')" class="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-500 hover:to-cyan-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-blue-400/30 flex flex-col items-center justify-center gap-0.5">
-                <span class="text-base">✨ Sihir Heal</span>
-                <span class="text-[10px] text-blue-200 font-normal">Pulih (15 MP)</span>
-            </button>
-            <button id="btn-item" onclick="handlePlayerAction('potion')" class="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 active:scale-95 transition text-white font-bold py-2.5 px-2 rounded-xl shadow border border-emerald-400/30 flex flex-col items-center justify-center gap-0.5">
-                <span class="text-base">🧪 Potion</span>
-                <span class="text-[10px] text-emerald-200 font-normal">+50 HP (Item)</span>
-            </button>
-        </div>
-    </main>
+const $ = id => document.getElementById(id);
+const canvas = $('game');
+const ctx = canvas.getContext('2d');
 
-    <!-- Footer -->
-    <footer class="mt-4 text-center text-xs text-slate-500 font-medium">
-        Shadow Quest: Adventure &copy; HTML5 Canvas & JS Game Engine
-    </footer>
+const T = 16, MW = 64, MH = 48, WW = MW * T, WH = MH * T;
+const SAVE_KEY = 'shadowquest_save_v1';
 
-    <!-- Game Logic Engine -->
-    <script>
-        // Web Audio API Synthesizer
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+/* ---------- RNG & hash ---------- */
+function mulberry(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hash(x, y, s = 0) {
+  let h = (x * 374761393 + y * 668265263 + s * 1274126177) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
 
-            const now = audioCtx.currentTime;
+/* =====================================================
+   DUNIA
+   ===================================================== */
+const G = 0, DG = 1, PATH = 2, WATER = 3, TREE = 4, FLOWER = 5, ROCK = 6;
+const SOLID = [0, 0, 0, 1, 1, 0, 1];
+const tiles = new Uint8Array(MW * MH);
+const SPAWN = { x: (MW / 2) * T + T, y: (MH / 2) * T + T };
+let ground;
 
-            if (type === 'hit') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } else if (type === 'skill') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-                osc.start(now);
-                osc.stop(now + 0.25);
-            } else if (type === 'heal') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (type === 'win') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(554.37, now + 0.1);
-                osc.frequency.setValueAtTime(659.25, now + 0.2);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-                osc.start(now);
-                osc.stop(now + 0.4);
-            }
-        }
+function genWorld() {
+  const r = mulberry(20261011);
+  for (let i = 0; i < tiles.length; i++) tiles[i] = r() < 0.28 ? DG : G;
 
-        // Game State Database
-        const player = {
-            level: 1,
-            hp: 100,
-            maxHp: 100,
-            mp: 30,
-            maxMp: 30,
-            atk: 18,
-            xp: 0,
-            nextXp: 50,
-            gold: 0,
-            potions: 2,
-            floor: 1
-        };
+  for (let n = 0; n < 5; n++) {
+    const cx = (r() * MW) | 0, cy = (r() * MH) | 0, rx = 3 + r() * 3, ry = 2 + r() * 3;
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+      if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1) tiles[y * MW + x] = WATER;
+    }
+  }
 
-        const enemiesDatabase = [
-            { name: "Shadow Bat", hp: 45, maxHp: 45, atk: 8, xp: 25, gold: 15, icon: "🦇" },
-            { name: "Goblin Scout", hp: 70, maxHp: 70, atk: 12, xp: 40, gold: 25, icon: "👺" },
-            { name: "Dark Sorcerer", hp: 100, maxHp: 100, atk: 18, xp: 65, gold: 40, icon: "🧙‍♂️" },
-            { name: "Shadow Lord (BOSS)", hp: 220, maxHp: 220, atk: 26, xp: 200, gold: 150, icon: "👿" }
-        ];
+  const mx = (MW / 2) | 0, my = (MH / 2) | 0;
+  let wob = 0;
+  for (let y = 0; y < MH; y++) {
+    wob = clamp(wob + Math.round((r() - 0.5) * 1.2), -4, 4);
+    for (let w = 0; w < 2; w++) tiles[y * MW + mx + wob + w] = PATH;
+  }
+  wob = 0;
+  for (let x = 0; x < MW; x++) {
+    wob = clamp(wob + Math.round((r() - 0.5) * 1.2), -3, 3);
+    for (let w = 0; w < 2; w++) tiles[(my + wob + w) * MW + x] = PATH;
+  }
 
-        let currentEnemy = null;
-        let isBusy = false;
-        let questKills = 0;
-        const targetKills = 3;
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const i = y * MW + x, t = tiles[i];
+    if (x < 2 || y < 2 || x >= MW - 2 || y >= MH - 2) { tiles[i] = TREE; continue; }
+    const near = Math.hypot(x - mx - 1, y - my - 1) < 6;
+    if (near && t === WATER) { tiles[i] = G; continue; }
+    if (t === G || t === DG) {
+      const v = r();
+      if (!near) {
+        if (v < 0.1) tiles[i] = TREE;
+        else if (v < 0.12) tiles[i] = ROCK;
+        else if (v < 0.19) tiles[i] = FLOWER;
+      } else if (v < 0.05) tiles[i] = FLOWER;
+    }
+  }
+}
 
-        // Initialize Game
-        function initGame() {
-            spawnEnemy();
-            updateUI();
-        }
+function drawTile(g, x, y, t) {
+  const px = x * T, py = y * T;
+  const grassy = t !== PATH && t !== WATER;
+  let base = '#4a9a4f';
+  if (t === DG) base = '#3f8c47';
+  else if (t === PATH) base = '#bb9d6b';
+  else if (t === WATER) base = '#2f6db3';
+  else if (grassy) base = hash(x, y, 9) < 0.28 ? '#3f8c47' : '#4a9a4f';
+  g.fillStyle = base; g.fillRect(px, py, T, T);
 
-        function spawnEnemy() {
-            let enemyIndex = 0;
-            if (player.floor >= 10) {
-                enemyIndex = 3; // Boss
-            } else if (player.floor >= 6) {
-                enemyIndex = 2; // Sorcerer
-            } else if (player.floor >= 3) {
-                enemyIndex = 1; // Goblin
-            } else {
-                enemyIndex = 0; // Bat
-            }
+  const dark = t === PATH ? '#a38655' : t === WATER ? '#285f9f' : '#3a8142';
+  const light = t === PATH ? '#cdb182' : t === WATER ? '#4d8ccf' : '#5aae5e';
+  for (let k = 0; k < 4; k++) {
+    const sx = (hash(x, y, k) * 14) | 0, sy = (hash(x, y, k + 10) * 14) | 0;
+    g.fillStyle = k % 2 ? dark : light; g.fillRect(px + sx, py + sy, 1, 1);
+  }
+  if (t === WATER) {
+    g.fillStyle = '#6aa6e3';
+    const o = (hash(x, y, 3) * 6) | 0;
+    g.fillRect(px + 2 + o, py + 5, 4, 1); g.fillRect(px + 7, py + 11, 5, 1);
+  }
+  if (t === TREE) {
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(px + 3, py + 13, 11, 3);
+    g.fillStyle = '#5b3a22'; g.fillRect(px + 6, py + 9, 4, 6);
+    g.fillStyle = '#1f5a2e';
+    g.fillRect(px + 2, py + 3, 12, 8); g.fillRect(px + 4, py + 1, 8, 12);
+    g.fillStyle = '#2f7a3c'; g.fillRect(px + 4, py + 3, 5, 3);
+    g.fillStyle = '#46a050'; g.fillRect(px + 5, py + 2, 3, 1);
+  }
+  if (t === ROCK) {
+    g.fillStyle = '#5a6074'; g.fillRect(px + 3, py + 11, 10, 3);
+    g.fillStyle = '#7a8094'; g.fillRect(px + 3, py + 7, 10, 5); g.fillRect(px + 4, py + 6, 8, 1);
+    g.fillStyle = '#9aa1b6'; g.fillRect(px + 4, py + 7, 5, 2);
+  }
+  if (t === FLOWER) {
+    const cols = ['#ff6b9a', '#ffd34e', '#b36bff', '#ffffff'];
+    for (let k = 0; k < 2; k++) {
+      const fx = 3 + ((hash(x, y, 20 + k) * 9) | 0), fy = 3 + ((hash(x, y, 30 + k) * 9) | 0);
+      g.fillStyle = '#2f7a3c'; g.fillRect(px + fx, py + fy + 1, 1, 2);
+      g.fillStyle = cols[(hash(x, y, 40 + k) * 4) | 0]; g.fillRect(px + fx - 1, py + fy, 3, 1); g.fillRect(px + fx, py + fy - 1, 1, 3);
+      g.fillStyle = '#ffd34e'; g.fillRect(px + fx, py + fy, 1, 1);
+    }
+  }
+}
 
-            const base = enemiesDatabase[enemyIndex];
-            currentEnemy = {
-                name: base.name,
-                hp: base.hp + (player.floor * 5),
-                maxHp: base.maxHp + (player.floor * 5),
-                atk: base.atk + (player.floor * 2),
-                xp: base.xp,
-                gold: base.gold,
-                icon: base.icon
-            };
+function buildGround() {
+  ground = document.createElement('canvas');
+  ground.width = WW; ground.height = WH;
+  const g = ground.getContext('2d');
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) drawTile(g, x, y, tiles[y * MW + x]);
+}
 
-            document.getElementById('enemy-icon').innerText = currentEnemy.icon;
-            document.getElementById('enemy-name').innerText = currentEnemy.name;
-            logMessage(`Musuh baru muncul: <span class="text-rose-400 font-bold">${currentEnemy.name}</span>!`, "text-amber-300");
-            updateUI();
-        }
+function solidAt(x, y) {
+  const tx = Math.floor(x / T), ty = Math.floor(y / T);
+  if (tx < 0 || ty < 0 || tx >= MW || ty >= MH) return true;
+  return SOLID[tiles[ty * MW + tx]] === 1;
+}
+function blocked(x, y, r) {
+  return solidAt(x - r, y - r) || solidAt(x + r, y - r) || solidAt(x - r, y + r) || solidAt(x + r, y + r);
+}
+function moveEnt(e, dx, dy, r) {
+  if (!blocked(e.x + dx, e.y, r)) e.x += dx;
+  if (!blocked(e.x, e.y + dy, r)) e.y += dy;
+}
 
-        function logMessage(msg, colorClass = "text-slate-300") {
-            const logBox = document.getElementById('combat-log');
-            const p = document.createElement('p');
-            p.className = colorClass;
-            p.innerHTML = msg;
-            logBox.appendChild(p);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
+/* =====================================================
+   STATE
+   ===================================================== */
+const S = {
+  state: 'menu', t: 0, shake: 0, freeze: 0,
+  questKills: 0, questTarget: 5, totalKills: 0, spawnT: 0,
+  toastT: 0, muted: false, holdHit: false
+};
+const P = {};
+let enemies = [], projs = [], parts = [], texts = [], pickups = [];
 
-        function createFloatingDamage(amount, isPlayer, isHeal = false) {
-            const container = document.getElementById('damage-container');
-            const el = document.createElement('div');
-            el.className = `absolute text-base sm:text-lg font-black font-mono damage-float ${isHeal ? 'text-green-400' : (isPlayer ? 'text-red-500' : 'text-amber-300')}`;
-            
-            // Randomize slightly for dynamic feel
-            const leftPos = isPlayer ? 25 : 70;
-            el.style.left = `${leftPos}%`;
-            el.style.top = `40%`;
-            el.innerText = isHeal ? `+${amount}` : `-${amount}`;
+function resetPlayer(keepProgress) {
+  const keep = keepProgress ? { lvl: P.lvl, xp: P.xp, coins: P.coins, medkits: P.medkits, maxHp: P.maxHp, maxMana: P.maxMana } : {};
+  Object.assign(P, {
+    x: SPAWN.x, y: SPAWN.y, vx: 0, vy: 0, fx: 0, fy: 1,
+    lvl: 1, xp: 0, xpNext: 30, coins: 0, medkits: 2,
+    maxHp: 100, maxMana: 60, hp: 100, mana: 60,
+    atkT: 0, atkCd: 0, fireCd: 0, dashCd: 0, dashT: 0, inv: 0, flash: 0,
+    combo: 0, step: 0, moving: false
+  }, keep);
+  P.xpNext = 30 + (P.lvl - 1) * 25;
+  P.hp = P.maxHp; P.mana = P.maxMana;
+}
 
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 800);
-        }
+function clearEntities() { enemies = []; projs = []; parts = []; texts = []; pickups = []; }
 
-        function handlePlayerAction(action) {
-            if (isBusy || player.hp <= 0) return;
+function newGame() {
+  resetPlayer(false);
+  S.questKills = 0; S.questTarget = 5; S.totalKills = 0;
+  clearEntities(); fillEnemies(true);
+}
 
-            let damage = 0;
-            let playedSound = false;
+function snapshot() {
+  return {
+    lvl: P.lvl, xp: P.xp, coins: P.coins, medkits: P.medkits,
+    maxHp: P.maxHp, maxMana: P.maxMana, hp: P.hp, mana: P.mana,
+    kills: S.questKills, target: S.questTarget, total: S.totalKills
+  };
+}
+function saveGame(silent) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot())); if (!silent) toast('Progres disimpan ✔'); }
+  catch (e) { if (!silent) toast('Gagal menyimpan'); }
+}
+function readSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (d && typeof d.lvl === 'number') return d;
+  } catch (e) {}
+  return null;
+}
+function loadGame() {
+  const d = readSave();
+  if (!d) { newGame(); return; }
+  resetPlayer(false);
+  Object.assign(P, {
+    lvl: d.lvl, xp: d.xp || 0, coins: d.coins || 0, medkits: d.medkits ?? 2,
+    maxHp: d.maxHp || 100, maxMana: d.maxMana || 60
+  });
+  P.xpNext = 30 + (P.lvl - 1) * 25;
+  P.hp = clamp(d.hp || P.maxHp, 1, P.maxHp); P.mana = clamp(d.mana ?? P.maxMana, 0, P.maxMana);
+  S.questKills = d.kills || 0; S.questTarget = d.target || 5; S.totalKills = d.total || 0;
+  clearEntities(); fillEnemies(true);
+}
 
-            if (action === 'attack') {
-                isBusy = true;
-                damage = Math.floor(player.atk * (0.9 + Math.random() * 0.3));
-                currentEnemy.hp = Math.max(0, currentEnemy.hp - damage);
-                playSound('hit');
-                playedSound = true;
+/* =====================================================
+   AUDIO (WebAudio, tanpa file)
+   ===================================================== */
+let actx = null, lastSfx = 0;
+function sfx(kind) {
+  if (S.muted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const now = actx.currentTime;
+    if (now - lastSfx < 0.02) return;
+    lastSfx = now;
+    const defs = {
+      hit:   [220, 120, 0.1, 'square', 0.07],
+      swing: [380, 220, 0.07, 'triangle', 0.05],
+      fire:  [180, 520, 0.22, 'sawtooth', 0.06],
+      boom:  [140, 40, 0.25, 'sawtooth', 0.09],
+      dash:  [300, 700, 0.12, 'triangle', 0.05],
+      hurt:  [160, 70, 0.22, 'square', 0.09],
+      coin:  [880, 1320, 0.09, 'square', 0.05],
+      heal:  [400, 800, 0.3, 'triangle', 0.07],
+      level: [440, 1100, 0.45, 'square', 0.07],
+      kill:  [300, 90, 0.18, 'square', 0.07]
+    };
+    const d = defs[kind]; if (!d) return;
+    const o = actx.createOscillator(), gn = actx.createGain();
+    o.type = d[3];
+    o.frequency.setValueAtTime(d[0], now);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, d[1]), now + d[2]);
+    gn.gain.setValueAtTime(d[4], now);
+    gn.gain.exponentialRampToValueAtTime(0.0001, now + d[2]);
+    o.connect(gn); gn.connect(actx.destination);
+    o.start(now); o.stop(now + d[2] + 0.02);
+  } catch (e) {}
+}
 
-                // Animate Hero Attack
-                document.getElementById('hero-sprite').classList.add('translate-x-4');
-                setTimeout(() => document.getElementById('hero-sprite').classList.remove('translate-x-4'), 150);
+/* =====================================================
+   MUSUH
+   ===================================================== */
+const TYPES = [
+  { name: 'green',  hp: 24, speed: 26, dmg: 8,  r: 6,  xp: 10, c: ['#4fcf5f', '#2f9a3f', '#a6f5ae'] },
+  { name: 'purple', hp: 34, speed: 44, dmg: 11, r: 6,  xp: 18, c: ['#a56bff', '#6a3bc4', '#d6b9ff'] },
+  { name: 'big',    hp: 70, speed: 18, dmg: 14, r: 10, xp: 35, c: ['#38c6c6', '#1e8a8f', '#9af0f0'] }
+];
 
-                // Animate Enemy Hurt
-                document.getElementById('enemy-sprite').classList.add('shake');
-                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 400);
+function spawnEnemy(type, x, y, child) {
+  const d = TYPES[type];
+  const scale = 1 + (P.lvl - 1) * 0.12;
+  const hp = child ? 12 : Math.round(d.hp * scale);
+  enemies.push({
+    type, x, y, hp, maxHp: hp, r: child ? 5 : d.r, speed: d.speed * (child ? 1.2 : 1),
+    dmg: child ? 6 : Math.round(d.dmg * (1 + (P.lvl - 1) * 0.06)),
+    kx: 0, ky: 0, flash: 0, t: rand(0, 6), wx: 0, wy: 0, wt: 0, child: !!child
+  });
+}
 
-                createFloatingDamage(damage, false);
-                logMessage(`Kamu menyerang ${currentEnemy.name} dan memberikan <span class="text-amber-400 font-bold">${damage}</span> damage!`);
+function pickType() {
+  const r = Math.random();
+  if (P.lvl >= 3 && r < 0.15) return 2;
+  if (P.lvl >= 2 && r < 0.45) return 1;
+  return 0;
+}
 
-            } else if (action === 'skill') {
-                if (player.mp < 10) {
-                    logMessage(`Mana tidak cukup! Membutuhkan 10 MP.`, "text-red-400");
-                    return;
-                }
-                isBusy = true;
-                player.mp -= 10;
-                damage = Math.floor(player.atk * 1.8 * (0.9 + Math.random() * 0.2));
-                currentEnemy.hp = Math.max(0, currentEnemy.hp - damage);
-                playSound('skill');
+function randomSpawn(minDist) {
+  for (let i = 0; i < 40; i++) {
+    const x = rand(3, MW - 3) * T, y = rand(3, MH - 3) * T;
+    if (blocked(x, y, 7)) continue;
+    if (Math.hypot(x - P.x, y - P.y) < minDist) continue;
+    return { x, y };
+  }
+  return null;
+}
 
-                // Animate Enemy Hurt
-                document.getElementById('enemy-sprite').classList.add('shake');
-                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 400);
+function maxEnemies() { return Math.min(6 + P.lvl, 14); }
+function fillEnemies(instant) {
+  while (enemies.length < maxEnemies()) {
+    const p = randomSpawn(instant ? 90 : 150);
+    if (!p) break;
+    spawnEnemy(pickType(), p.x, p.y, false);
+    if (!instant) break;
+  }
+}
 
-                createFloatingDamage(damage, false);
-                logMessage(`⚡ SHADOW SLASH! Menebas ${currentEnemy.name} sebesar <span class="text-purple-400 font-bold">${damage}</span> damage!`, "text-purple-300");
+function updateEnemies(dt, active) {
+  for (const e of enemies) {
+    e.t += dt;
+    if (e.flash > 0) e.flash -= dt;
+    const d = Math.hypot(P.x - e.x, P.y - e.y);
+    let mx = 0, my = 0, sp = e.speed;
+    if (active && d < 120) {
+      mx = (P.x - e.x) / (d || 1); my = (P.y - e.y) / (d || 1);
+      sp *= 0.3 + 0.9 * Math.max(0, Math.sin(e.t * 6));
+    } else {
+      e.wt -= dt;
+      if (e.wt <= 0) {
+        const a = rand(0, Math.PI * 2); e.wx = Math.cos(a); e.wy = Math.sin(a); e.wt = rand(1.2, 3);
+        if (Math.random() < 0.35) { e.wx = 0; e.wy = 0; }
+      }
+      mx = e.wx; my = e.wy; sp *= 0.4 * Math.max(0, Math.sin(e.t * 6));
+    }
+    moveEnt(e, (mx * sp + e.kx) * dt, (my * sp + e.ky) * dt, e.r - 1);
+    e.kx *= Math.pow(0.0008, dt); e.ky *= Math.pow(0.0008, dt);
 
-            } else if (action === 'heal') {
-                if (player.mp < 15) {
-                    logMessage(`Mana tidak cukup! Membutuhkan 15 MP.`, "text-red-400");
-                    return;
-                }
-                isBusy = true;
-                player.mp -= 15;
-                const healAmount = 35;
-                player.hp = Math.min(player.maxHp, player.hp + healAmount);
-                playSound('heal');
+    if (active && P.inv <= 0 && d < e.r + 5) hurtPlayer(e.dmg, (P.x - e.x) / (d || 1), (P.y - e.y) / (d || 1));
+  }
+}
 
-                createFloatingDamage(healAmount, true, true);
-                logMessage(`✨ Kamu menggunakan Sihir Pemulihan dan pulih <span class="text-emerald-400 font-bold">${healAmount} HP</span>!`, "text-emerald-300");
+/* =====================================================
+   PEMAIN & COMBAT
+   ===================================================== */
+const key = {};
+const joy = { x: 0, y: 0 };
 
-            } else if (action === 'potion') {
-                if (player.potions <= 0) {
-                    logMessage(`Kamu tidak memiliki Potion tersisa!`, "text-red-400");
-                    return;
-                }
-                isBusy = true;
-                player.potions--;
-                const healAmount = 50;
-                player.hp = Math.min(player.maxHp, player.hp + healAmount);
-                playSound('heal');
+function dmgMelee() { return 12 + P.lvl * 2; }
+function dmgFire() { return 22 + P.lvl * 3; }
 
-                createFloatingDamage(healAmount, true, true);
-                logMessage(`🧪 Kamu minum Potion dan memulihkan <span class="text-emerald-400 font-bold">${healAmount} HP</span>!`, "text-emerald-300");
-            }
+function nearestEnemy(range) {
+  let best = null, bd = range;
+  for (const e of enemies) { const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < bd) { bd = d; best = e; } }
+  return best;
+}
+function aimAssist(range) {
+  const e = nearestEnemy(range);
+  if (e) { const d = Math.hypot(e.x - P.x, e.y - P.y) || 1; P.fx = (e.x - P.x) / d; P.fy = (e.y - P.y) / d; }
+}
 
-            updateUI();
+function addText(x, y, str, color) { texts.push({ x, y, str, color, t: 0.8 }); }
+function burst(x, y, n, colors, spd, life) {
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2), s = rand(spd * 0.3, spd);
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(life * 0.5, life), max: life, c: colors[(Math.random() * colors.length) | 0], s: Math.random() < 0.3 ? 2 : 1 });
+  }
+}
 
-            // Check Enemy Death or Enemy Turn
-            if (currentEnemy.hp <= 0) {
-                setTimeout(handleEnemyDefeated, 600);
-            } else {
-                setTimeout(enemyTurn, 800);
-            }
-        }
+function doHit() {
+  if (S.state !== 'play' || P.atkCd > 0 || P.dashT > 0) return;
+  aimAssist(46);
+  P.atkCd = 0.32; P.atkT = 0.18; P.combo ^= 1;
+  sfx('swing');
+  let hitAny = false;
+  for (const e of enemies.slice()) {
+    const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1;
+    if (d < 26 + e.r && ((dx / d) * P.fx + (dy / d) * P.fy > 0.1 || d < 12)) {
+      hurtEnemy(e, dmgMelee(), dx / d, dy / d, 140);
+      hitAny = true;
+    }
+  }
+  if (hitAny) { S.freeze = 0.05; S.shake = Math.max(S.shake, 2); sfx('hit'); }
+}
 
-        function enemyTurn() {
-            if (currentEnemy.hp <= 0) return;
+function doFire() {
+  if (S.state !== 'play' || P.fireCd > 0 || P.mana < 15) { if (P.mana < 15 && S.state === 'play' && P.fireCd <= 0) toast('Mana kurang!'); return; }
+  aimAssist(110);
+  P.mana -= 15; P.fireCd = 1.2; P.atkT = 0.12;
+  projs.push({ x: P.x + P.fx * 8, y: P.y + P.fy * 8, vx: P.fx * 190, vy: P.fy * 190, life: 1.2, dmg: dmgFire() });
+  sfx('fire');
+}
 
-            const enemyDamage = Math.floor(currentEnemy.atk * (0.8 + Math.random() * 0.4));
-            player.hp = Math.max(0, player.hp - enemyDamage);
-            playSound('hit');
+function doDash() {
+  if (S.state !== 'play' || P.dashCd > 0) return;
+  let dx = joy.x, dy = joy.y;
+  if (key.ArrowLeft || key.KeyA) dx -= 1; if (key.ArrowRight || key.KeyD) dx += 1;
+  if (key.ArrowUp || key.KeyW) dy -= 1; if (key.ArrowDown || key.KeyS) dy += 1;
+  let m = Math.hypot(dx, dy);
+  if (m < 0.1) { dx = P.fx; dy = P.fy; m = 1; }
+  P.vx = (dx / m) * 250; P.vy = (dy / m) * 250;
+  P.dashT = 0.16; P.dashCd = 1.4; P.inv = Math.max(P.inv, 0.25);
+  sfx('dash');
+}
 
-            // Animate Hero Hurt
-            document.getElementById('hero-sprite').classList.add('shake');
-            setTimeout(() => document.getElementById('hero-sprite').classList.remove('shake'), 400);
+function doMedkit() {
+  if (S.state !== 'play') return;
+  if (P.medkits <= 0) { toast('Medkit habis!'); return; }
+  if (P.hp >= P.maxHp) { toast('HP sudah penuh'); return; }
+  P.medkits--; const h = Math.min(40, P.maxHp - P.hp); P.hp += h;
+  addText(P.x, P.y - 14, '+' + h, '#7dff9a');
+  burst(P.x, P.y, 14, ['#7dff9a', '#d6ffe0'], 40, 0.7);
+  sfx('heal');
+}
 
-            createFloatingDamage(enemyDamage, true);
-            logMessage(`${currentEnemy.name} menyerang balik! Kamu menerima <span class="text-red-400 font-bold">${enemyDamage}</span> damage.`, "text-rose-300");
+function hurtEnemy(e, dmg, dx, dy, kb) {
+  e.hp -= dmg; e.flash = 0.12;
+  e.kx += dx * kb; e.ky += dy * kb;
+  addText(e.x, e.y - 8, String(dmg), '#fff3b0');
+  burst(e.x, e.y, 6, TYPES[e.type].c, 60, 0.4);
+  if (e.hp <= 0) killEnemy(e);
+}
 
-            // Slowly restore MP each turn
-            player.mp = Math.min(player.maxMp, player.mp + 3);
+function killEnemy(e) {
+  const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1);
+  const d = TYPES[e.type];
+  burst(e.x, e.y, 16, d.c, 80, 0.6);
+  sfx('kill');
+  const n = e.child ? 1 : 1 + ((Math.random() * 3) | 0);
+  for (let k = 0; k < n; k++) pickups.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), type: 'coin', t: 0 });
+  if (!e.child && Math.random() < 0.07) pickups.push({ x: e.x, y: e.y, type: 'med', t: 0 });
+  if (e.type === 2) { spawnEnemy(0, e.x - 8, e.y, true); spawnEnemy(0, e.x + 8, e.y, true); }
+  addXp(e.child ? 4 : d.xp);
+  if (!e.child) {
+    S.totalKills++;
+    S.questKills++;
+    if (S.questKills >= S.questTarget) questDone();
+  }
+}
 
-            updateUI();
+function addXp(n) {
+  P.xp += n;
+  while (P.xp >= P.xpNext) {
+    P.xp -= P.xpNext; P.lvl++;
+    P.xpNext = 30 + (P.lvl - 1) * 25;
+    P.maxHp += 15; P.maxMana += 8; P.hp = P.maxHp; P.mana = P.maxMana;
+    toast('LEVEL UP! LV ' + P.lvl);
+    burst(P.x, P.y, 28, ['#ffd34e', '#fff3b0', '#b36bff'], 90, 0.9);
+    sfx('level'); saveGame(true);
+  }
+}
 
-            if (player.hp <= 0) {
-                logMessage(`💀 KHIANAT KEGELAPAN! Kamu telah gugur di lantai ${player.floor}.`, "text-red-500 font-bold");
-                setTimeout(() => {
-                    alert("Game Over! Kamu akan bangkit kembali dari awal.");
-                    resetGame();
-                }, 1000);
-            } else {
-                isBusy = false;
-            }
-        }
+function hurtPlayer(dmg, dx, dy) {
+  if (P.inv > 0 || S.state !== 'play') return;
+  P.hp -= dmg; P.inv = 0.8; P.flash = 0.2;
+  P.vx = dx * 120; P.vy = dy * 120;
+  S.shake = 4; S.freeze = 0.06;
+  addText(P.x, P.y - 12, '-' + dmg, '#ff7b8c');
+  burst(P.x, P.y, 10, ['#e0455a', '#ff9db0'], 60, 0.5);
+  sfx('hurt');
+  if (P.hp <= 0) { P.hp = 0; gameOver(); }
+}
 
-        function handleEnemyDefeated() {
-            playSound('win');
-            logMessage(`🎉 Kamu mengalahkan <span class="text-emerald-400 font-bold">${currentEnemy.name}</span>!`, "text-emerald-300");
-            
-            player.xp += currentEnemy.xp;
-            player.gold += currentEnemy.gold;
-            questKills++;
+function questDone() {
+  S.state = 'win';
+  show('winScreen'); saveGame(true); sfx('level');
+}
 
-            logMessage(`Mendapatkan +${currentEnemy.xp} XP dan +${currentEnemy.gold} Gold.`, "text-amber-300");
+function gameOver() {
+  S.state = 'over';
+  show('gameOverScreen'); sfx('boom');
+}
 
-            // Level Up Check
-            if (player.xp >= player.nextXp) {
-                player.level++;
-                player.xp -= player.nextXp;
-                player.nextXp = Math.floor(player.nextXp * 1.5);
-                player.maxHp += 20;
-                player.hp = player.maxHp;
-                player.maxMp += 10;
-                player.mp = player.maxMp;
-                player.atk += 5;
-                logMessage(`🌟 LEVEL UP! Kamu naik ke Level ${player.level}! Status meningkat!`, "text-purple-300 font-bold");
-            }
+function explode(x, y, dmg) {
+  burst(x, y, 24, ['#ff8a2b', '#ffd34e', '#fff3b0'], 100, 0.5);
+  S.shake = Math.max(S.shake, 3); sfx('boom');
+  for (const e of enemies.slice()) {
+    const dx = e.x - x, dy = e.y - y, d = Math.hypot(dx, dy);
+    if (d < 24 + e.r) hurtEnemy(e, dmg, dx / (d || 1), dy / (d || 1), 170);
+  }
+}
 
-            // Chance to drop Potion
-            if (Math.random() < 0.35) {
-                player.potions++;
-                logMessage(`🧪 Musuh menjatuhkan Potion! (+1 Potion)`, "text-teal-300");
-            }
+function updateProjs(dt) {
+  for (let i = projs.length - 1; i >= 0; i--) {
+    const p = projs[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    parts.push({ x: p.x, y: p.y, vx: rand(-10, 10), vy: rand(-10, 10), life: 0.25, max: 0.25, c: Math.random() < 0.5 ? '#ff8a2b' : '#ffd34e', s: 1 });
+    let hit = p.life <= 0 || solidAt(p.x, p.y);
+    if (!hit) for (const e of enemies) if (Math.hypot(e.x - p.x, e.y - p.y) < e.r + 3) { hit = true; break; }
+    if (hit) { explode(p.x, p.y, p.dmg); projs.splice(i, 1); }
+  }
+}
 
-            // Progression
-            player.floor++;
-            updateQuest();
+function updatePlayer(dt) {
+  P.atkCd = Math.max(0, P.atkCd - dt);
+  P.fireCd = Math.max(0, P.fireCd - dt);
+  P.dashCd = Math.max(0, P.dashCd - dt);
+  P.atkT = Math.max(0, P.atkT - dt);
+  P.inv = Math.max(0, P.inv - dt);
+  P.flash = Math.max(0, P.flash - dt);
+  P.mana = Math.min(P.maxMana, P.mana + 4 * dt);
+  P.hp = Math.min(P.maxHp, P.hp + 0.4 * dt);
 
-            setTimeout(() => {
-                spawnEnemy();
-                isBusy = false;
-            }, 1200);
-        }
+  let dx = joy.x, dy = joy.y;
+  if (key.ArrowLeft || key.KeyA) dx -= 1; if (key.ArrowRight || key.KeyD) dx += 1;
+  if (key.ArrowUp || key.KeyW) dy -= 1; if (key.ArrowDown || key.KeyS) dy += 1;
+  const m = Math.hypot(dx, dy);
+  P.moving = m > 0.15;
 
-        function updateQuest() {
-            if (player.floor >= 10) {
-                document.getElementById('quest-text').innerText = "Kalahkan BOSS Shadow Lord!";
-            } else {
-                document.getElementById('quest-text').innerText = `Kalahkan musuh (${questKills}/${targetKills})`;
-            }
-        }
+  if (P.dashT > 0) {
+    P.dashT -= dt;
+    parts.push({ x: P.x, y: P.y + 2, vx: 0, vy: 0, life: 0.25, max: 0.25, c: '#b36bff', s: 2 });
+    moveEnt(P, P.vx * dt, P.vy * dt, 4);
+  } else {
+    const sp = 70;
+    if (P.moving) {
+      dx /= Math.max(1, m); dy /= Math.max(1, m);
+      const mm = Math.hypot(dx, dy) || 1;
+      P.fx = dx / mm; P.fy = dy / mm;
+      moveEnt(P, dx * sp * dt, dy * sp * dt, 4);
+      P.step += dt * 10;
+    }
+    moveEnt(P, P.vx * dt, P.vy * dt, 4);
+    P.vx *= Math.pow(0.001, dt); P.vy *= Math.pow(0.001, dt);
+  }
 
-        function resetGame() {
-            player.level = 1;
-            player.hp = 100;
-            player.maxHp = 100;
-            player.mp = 30;
-            player.maxMp = 30;
-            player.atk = 18;
-            player.xp = 0;
-            player.nextXp = 50;
-            player.gold = 0;
-            player.potions = 2;
-            player.floor = 1;
-            questKills = 0;
-            isBusy = false;
+  if (S.holdHit || key.KeyJ || key.Space) doHit();
 
-            document.getElementById('combat-log').innerHTML = '';
-            logMessage("Petualangan dimulai kembali dari awal lantai!", "text-purple-400");
-            spawnEnemy();
-            updateUI();
-        }
+  // pickup
+  for (let i = pickups.length - 1; i >= 0; i--) {
+    const k = pickups[i]; k.t += dt;
+    const d = Math.hypot(P.x - k.x, P.y - k.y);
+    if (d < 36 && k.t > 0.25) { k.x += ((P.x - k.x) / (d || 1)) * 140 * dt; k.y += ((P.y - k.y) / (d || 1)) * 140 * dt; }
+    if (d < 8) {
+      if (k.type === 'coin') { P.coins++; sfx('coin'); }
+      else { P.medkits++; toast('+1 Medkit'); sfx('heal'); }
+      pickups.splice(i, 1);
+    }
+  }
+}
 
-        function updateUI() {
-            // Player Bars & Stats
-            const heroHpPct = (player.hp / player.maxHp) * 100;
-            document.getElementById('hero-hp-bar').style.width = `${heroHpPct}%`;
-            document.getElementById('hero-hp-text').innerText = `${player.hp} / ${player.maxHp}`;
-            document.getElementById('stat-level').innerText = player.level;
-            document.getElementById('stat-mp').innerText = `${player.mp}/${player.maxMp}`;
-            document.getElementById('stat-gold').innerText = player.gold;
-            document.getElementById('stat-potion').innerText = player.potions;
+/* =====================================================
+   UI
+   ===================================================== */
+function setText(el, v) { if (el._v !== v) { el._v = v; el.textContent = v; } }
+function setW(el, pct) { const v = clamp(pct, 0, 100).toFixed(1) + '%'; if (el._w !== v) { el._w = v; el.style.width = v; } }
 
-            // Enemy Bars
-            if (currentEnemy) {
-                const enemyHpPct = (currentEnemy.hp / currentEnemy.maxHp) * 100;
-                document.getElementById('enemy-hp-bar').style.width = `${enemyHpPct}%`;
-                document.getElementById('enemy-hp-text').innerText = `${currentEnemy.hp} / ${currentEnemy.maxHp}`;
-            }
+const el = {
+  level: $('levelText'), hpT: $('hpText'), hpB: $('hpBar'), manaT: $('manaText'), manaB: $('manaBar'),
+  xpB: $('xpBar'), quest: $('questText'), questB: $('questBar'), coin: $('coinText'),
+  toast: $('toast'), med: $('medkitCount'), fireCd: $('fireCooldown'), dashCd: $('dashCooldown'),
+  hint: $('desktopHint')
+};
 
-            // Floor & Location
-            document.getElementById('location-text').innerText = player.floor >= 10 ? "Chamber of Shadow Lord" : `Dungeon Floor ${player.floor}`;
-            updateQuest();
-        }
+function updateHud() {
+  setText(el.level, 'LV ' + P.lvl);
+  setText(el.hpT, Math.ceil(P.hp) + '/' + P.maxHp);
+  setW(el.hpB, (P.hp / P.maxHp) * 100);
+  setText(el.manaT, Math.floor(P.mana) + '/' + P.maxMana);
+  setW(el.manaB, (P.mana / P.maxMana) * 100);
+  setW(el.xpB, (P.xp / P.xpNext) * 100);
+  setText(el.quest, 'Kalahkan slime: ' + S.questKills + '/' + S.questTarget);
+  setW(el.questB, (S.questKills / S.questTarget) * 100);
+  setText(el.coin, String(P.coins));
+  setText(el.med, String(P.medkits));
+  cdLabel(el.fireCd, P.fireCd); cdLabel(el.dashCd, P.dashCd);
+}
+function cdLabel(node, v) {
+  const on = v > 0;
+  setText(node, on ? v.toFixed(1) : '');
+  if (node._on !== on) { node._on = on; node.classList.toggle('on', on); }
+}
 
-        // Run Engine
-        window.onload = initGame;
-    </script>
+function toast(msg, t = 1.8) {
+  el.toast.textContent = msg; el.toast.classList.add('show'); S.toastT = t;
+}
+
+const screens = ['startScreen', 'pauseScreen', 'gameOverScreen', 'winScreen'];
+function show(id) { screens.forEach(s => $(s).classList.toggle('hidden', s !== id)); }
+function hideAll() { screens.forEach(s => $(s).classList.add('hidden')); }
+function refreshContinue() { $('continueBtn').disabled = !readSave(); }
+
+function startPlay() { hideAll(); S.state = 'play'; initAudio(); }
+function initAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} }
+function pause() { if (S.state === 'play') { S.state = 'pause'; show('pauseScreen'); S.holdHit = false; } }
+function resume() { if (S.state === 'pause') startPlay(); }
+function toMenu() { S.state = 'menu'; refreshContinue(); show('startScreen'); }
+
+$('playBtn').addEventListener('click', () => { newGame(); startPlay(); });
+$('continueBtn').addEventListener('click', () => { loadGame(); startPlay(); });
+$('pauseBtn').addEventListener('click', pause);
+$('resumeBtn').addEventListener('click', resume);
+$('saveBtn').addEventListener('click', () => saveGame(false));
+$('menuBtn').addEventListener('click', () => { saveGame(true); toMenu(); });
+$('gameOverMenuBtn').addEventListener('click', toMenu);
+$('retryBtn').addEventListener('click', () => {
+  const lost = Math.floor(P.coins * 0.25);
+  P.coins -= lost;
+  P.x = SPAWN.x; P.y = SPAWN.y; P.hp = P.maxHp; P.mana = P.maxMana; P.inv = 1.5;
+  P.vx = P.vy = 0;
+  clearEntities(); fillEnemies(true); startPlay();
+  if (lost) toast('Kehilangan ' + lost + ' koin');
+});
+$('winContinueBtn').addEventListener('click', () => {
+  S.questTarget += 5; S.questKills = 0; startPlay();
+  toast('Misi baru: ' + S.questTarget + ' slime!');
+});
+
+/* =====================================================
+   INPUT
+   ===================================================== */
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
+
+addEventListener('keydown', e => {
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  if (e.repeat) { key[e.code] = true; return; }
+  key[e.code] = true;
+  if (e.code === 'Escape' || e.code === 'KeyP') { S.state === 'play' ? pause() : resume(); }
+  else if (e.code === 'KeyK') doFire();
+  else if (e.code === 'KeyL' || e.code === 'ShiftLeft') doDash();
+  else if (e.code === 'KeyH') doMedkit();
+  else if (e.code === 'KeyM') { S.muted = !S.muted; toast(S.muted ? 'Suara mati' : 'Suara hidup'); }
+  initAudio();
+});
+addEventListener('keyup', e => { key[e.code] = false; });
+addEventListener('blur', () => { Object.keys(key).forEach(k => key[k] = false); S.holdHit = false; pause(); });
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Joystick
+const joyEl = $('joystick'), knob = $('joyKnob');
+let joyId = null;
+function joyMove(e) {
+  const r = joyEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  let dx = e.clientX - cx, dy = e.clientY - cy;
+  const max = r.width / 2 - 10, d = Math.hypot(dx, dy);
+  if (d > max) { dx = (dx / d) * max; dy = (dy / d) * max; }
+  joy.x = dx / max; joy.y = dy / max;
+  knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+}
+function joyEnd(e) {
+  if (e.pointerId !== joyId) return;
+  joyId = null; joy.x = joy.y = 0; knob.style.transform = '';
+}
+joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); initAudio(); });
+joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+joyEl.addEventListener('pointerup', joyEnd);
+joyEl.addEventListener('pointercancel', joyEnd);
+
+// Tombol aksi
+document.querySelectorAll('.action').forEach(b => {
+  const a = b.dataset.action;
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); b.classList.add('pressed'); initAudio();
+    if (a === 'hit') { S.holdHit = true; doHit(); }
+    else if (a === 'fire') doFire();
+    else if (a === 'dash') doDash();
+    else if (a === 'medkit') doMedkit();
+  });
+  const up = () => { b.classList.remove('pressed'); if (a === 'hit') S.holdHit = false; };
+  b.addEventListener('pointerup', up);
+  b.addEventListener('pointerleave', up);
+  b.addEventListener('pointercancel', up);
+});
+
+/* =====================================================
+   RENDER
+   ===================================================== */
+let dpr = 1, zoom = 3, vw = 320, vh = 180, vig = null;
+const camera = { x: 0, y: 0 };
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+  zoom = Math.max(2, Math.floor(Math.min(cw / 260, ch / 150)));
+  vw = cw / zoom; vh = ch / zoom;
+  vig = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.35,
+    canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75);
+  vig.addColorStop(0, 'rgba(10,8,25,0)'); vig.addColorStop(1, 'rgba(10,8,25,.55)');
+}
+addEventListener('resize', resize);
+
+function shadow(x, y, w) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(Math.round(x - w / 2), Math.round(y), w, 2); }
+
+function drawSlime(e) {
+  const c = TYPES[e.type].c, s = Math.sin(e.t * 6);
+  const w = Math.round(e.r * 2 + s * 1.5), h = Math.round(e.r * 1.6 - s * 1.5);
+  const x = Math.round(e.x - w / 2), y = Math.round(e.y + e.r - 1 - h);
+  shadow(e.x, e.y + e.r - 1, w);
+  ctx.fillStyle = e.flash > 0 ? '#fff' : c[1]; ctx.fillRect(x, y + 1, w, h - 1); ctx.fillRect(x + 1, y, w - 2, h);
+  ctx.fillStyle = e.flash > 0 ? '#fff' : c[0]; ctx.fillRect(x + 1, y + 1, w - 2, h - 3); ctx.fillRect(x + 2, y, w - 4, 1);
+  if (e.flash <= 0) {
+    ctx.fillStyle = c[2]; ctx.fillRect(x + 2, y + 2, 2, 1);
+    ctx.fillStyle = '#10131b'; ctx.fillRect(x + (w >> 1) - 2, y + (h >> 1) - 1, 1, 2); ctx.fillRect(x + (w >> 1) + 1, y + (h >> 1) - 1, 1, 2);
+  }
+  if (e.hp < e.maxHp) {
+    ctx.fillStyle = '#000'; ctx.fillRect(x, y - 4, w, 2);
+    ctx.fillStyle = '#e0455a'; ctx.fillRect(x, y - 4, Math.max(1, Math.round(w * e.hp / e.maxHp)), 2);
+  }
+}
+
+function drawPlayer() {
+  if (P.inv > 0 && P.flash <= 0 && Math.floor(S.t * 20) % 2 === 0) return;
+  const x = Math.round(P.x), y = Math.round(P.y);
+  const wk = P.moving ? Math.floor(P.step) % 2 : 0;
+  shadow(x, y + 5, 10);
+  ctx.fillStyle = P.flash > 0 ? '#fff' : '#1a1630'; ctx.fillRect(x - 5, y - 4, 10, 9);          // jubah
+  ctx.fillStyle = '#2a2f4a'; ctx.fillRect(x - 3, y + 2, 2, 3 - wk); ctx.fillRect(x + 1, y + 2, 2, 2 + wk); // kaki
+  ctx.fillStyle = P.flash > 0 ? '#fff' : '#4b5cc4'; ctx.fillRect(x - 4, y - 4, 8, 7);            // badan
+  ctx.fillStyle = '#6f82ee'; ctx.fillRect(x - 4, y - 4, 8, 1);
+  ctx.fillStyle = '#2b2f3a'; ctx.fillRect(x - 4, y - 10, 8, 6);                                    // helm
+  ctx.fillStyle = '#3d4354'; ctx.fillRect(x - 4, y - 10, 8, 1);
+  ctx.fillStyle = '#b36bff';
+  const ex = Math.round(P.fx * 1.5);
+  ctx.fillRect(x - 2 + ex, y - 7, 1, 1); ctx.fillRect(x + 1 + ex, y - 7, 1, 1);
+  if (P.fy < -0.5) { ctx.fillStyle = '#2b2f3a'; ctx.fillRect(x - 3, y - 8, 6, 3); }
+
+  // tebasan pedang
+  const dur = 0.18;
+  if (P.atkT > 0) {
+    const k = 1 - P.atkT / dur, base = Math.atan2(P.fy, P.fx), dir = P.combo ? 1 : -1;
+    const a = base + dir * (-1.1 + 2.2 * k);
+    ctx.save(); ctx.translate(x, y - 2);
+    ctx.strokeStyle = 'rgba(255,255,255,' + (0.8 * (1 - k)).toFixed(2) + ')'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 17, base + dir * -1.1, a, dir < 0); ctx.stroke();
+    ctx.rotate(a);
+    ctx.fillStyle = '#d7dcf0'; ctx.fillRect(6, -1, 12, 2);
+    ctx.fillStyle = '#8b6b3a'; ctx.fillRect(3, -1, 3, 2);
+    ctx.restore();
+  }
+}
+
+function render() {
+  const cw = canvas.width, ch = canvas.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#10131b'; ctx.fillRect(0, 0, cw, ch);
+  ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0);
+
+  const tx = P.x - vw / 2, ty = P.y - vh / 2;
+  camera.x = WW > vw ? clamp(tx, 0, WW - vw) : (WW - vw) / 2;
+  camera.y = WH > vh ? clamp(ty, 0, WH - vh) : (WH - vh) / 2;
+  let sx = 0, sy = 0;
+  if (S.shake > 0.1) { sx = rand(-S.shake, S.shake); sy = rand(-S.shake, S.shake); }
+  ctx.translate(-Math.round(camera.x + sx), -Math.round(camera.y + sy));
+
+  ctx.drawImage(ground, 0, 0);
+
+  for (const k of pickups) {
+    const bob = Math.sin(k.t * 6) * 1.5, x = Math.round(k.x), y = Math.round(k.y + bob);
+    if (k.type === 'coin') {
+      ctx.fillStyle = '#8a6a10'; ctx.fillRect(x - 2, y - 3, 4, 6);
+      ctx.fillStyle = '#ffd34e'; ctx.fillRect(x - 1, y - 3, 3, 5); ctx.fillStyle = '#fff3b0'; ctx.fillRect(x - 1, y - 2, 1, 2);
+    } else {
+      ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, y - 3, 8, 7);
+      ctx.fillStyle = '#e0455a'; ctx.fillRect(x - 1, y - 2, 2, 5); ctx.fillRect(x - 3, y, 6, 1);
+    }
+  }
+
+  const list = enemies.slice().sort((a, b) => a.y - b.y);
+  let drawnP = false;
+  for (const e of list) {
+    if (!drawnP && e.y > P.y) { drawPlayer(); drawnP = true; }
+    drawSlime(e);
+  }
+  if (!drawnP) drawPlayer();
+
+  for (const p of projs) {
+    const x = Math.round(p.x), y = Math.round(p.y);
+    ctx.fillStyle = '#ff8a2b'; ctx.fillRect(x - 3, y - 3, 6, 6);
+    ctx.fillStyle = '#ffd34e'; ctx.fillRect(x - 2, y - 2, 4, 4);
+    ctx.fillStyle = '#fff3b0'; ctx.fillRect(x - 1, y - 1, 2, 2);
+  }
+  for (const p of parts) {
+    ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
+    ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.font = "5px 'Press Start 2P', monospace"; ctx.textAlign = 'center';
+  for (const t of texts) {
+    ctx.globalAlpha = clamp(t.t * 2, 0, 1);
+    ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.strokeText(t.str, Math.round(t.x), Math.round(t.y));
+    ctx.fillStyle = t.color; ctx.fillText(t.str, Math.round(t.x), Math.round(t.y));
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (vig) { ctx.fillStyle = vig; ctx.fillRect(0, 0, cw, ch); }
+  if (P.flash > 0 && P.hp < P.maxHp) { ctx.fillStyle = 'rgba(224,69,90,' + (P.flash * 0.9).toFixed(2) + ')'; ctx.fillRect(0, 0, cw, ch); }
+}
+
+/* =====================================================
+   LOOP
+   ===================================================== */
+let last = performance.now();
+function loop(now) {
+  const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+  S.t += rdt;
+  S.shake = Math.max(0, S.shake - rdt * 18);
+
+  if (S.toastT > 0) { S.toastT -= rdt; if (S.toastT <= 0) el.toast.classList.remove('show'); }
+
+  let dt = rdt;
+  if (S.freeze > 0) { S.freeze -= rdt; dt = 0; }
+
+  if (S.state === 'play') {
+    if (dt > 0) {
+      updatePlayer(dt);
+      updateEnemies(dt, true);
+      updateProjs(dt);
+      S.spawnT -= dt;
+      if (S.spawnT <= 0) { S.spawnT = 2; fillEnemies(false); }
+    }
+  } else if (S.state === 'menu') {
+    updateEnemies(rdt, false);
+  }
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]; p.life -= rdt; p.x += p.vx * rdt; p.y += p.vy * rdt;
+    if (p.life <= 0) parts.splice(i, 1);
+  }
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i]; t.t -= rdt; t.y -= 18 * rdt;
+    if (t.t <= 0) texts.splice(i, 1);
+  }
+
+  render();
+  updateHud();
+  requestAnimationFrame(loop);
+}
+
+/* =====================================================
+   INIT
+   ===================================================== */
+genWorld();
+buildGround();
+resetPlayer(false);
+fillEnemies(true);
+resize();
+refreshContinue();
+show('startScreen');
+requestAnimationFrame(t => { last = t; loop(t); });
+})();
+
+</script>
 </body>
 </html>
